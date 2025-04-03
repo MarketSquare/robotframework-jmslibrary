@@ -1,0 +1,45 @@
+Metadata-Version: 2.1
+Name: robotframework-jmslibrary
+Version: 0.2.0
+Summary: 
+Author: Many Kasiriha
+Author-email: many.kasiriha@dbschenker.com
+Requires-Python: >=3.8.1,<4.0
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Dist: jpype1 (>=1.4.1,<2.0.0)
+Requires-Dist: robotframework
+Requires-Dist: robotframework-assertion-engine (>=1.1.1,<2.0.0)
+Description-Content-Type: text/markdown
+
+# robotframework-jmslibrary
+
+## Getting started
+
+### Installation
+
+`pip install --upgrade robotframework-jmslibrary`
+
+### Usage
+
+```RobotFramework
+*** Settings ***
+Library  JMS
+
+*** Test Cases ***
+Send And Receive JMS Messages
+    Create Producer    RobotQueue1    
+    Send    Hello from Robot Framework
+    Create Consumer    RobotQueue1
+    Receive    ==    Hello from Robot Framework
+
+Send JMS Messages
+    Create Producer    RobotQueue4
+    Send Message    Hello from Robot Framework
+    Create Consumer    RobotQueue4
+    Receive    ==    Hello from Robot Framework
+```
+
+
