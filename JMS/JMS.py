@@ -138,7 +138,10 @@ class JMS(object):
         self.connectionFactory = self.jndiContext.lookup(self.connection_factory)
 
     def _create_weblogic_connection(self):
-        from javax.jms import Session
+        try:
+            from javax.jms import Session
+        except ImportError:
+            from jakarta.jms import Session
         self.connection = self.connectionFactory.createConnection()
         self.session = self.connection.createSession(
             False, Session.AUTO_ACKNOWLEDGE
@@ -146,7 +149,10 @@ class JMS(object):
 
 
     def _create_activemq_connection(self):
-        from javax.jms import Session
+        try:
+            from javax.jms import Session
+        except ImportError:
+            from jakarta.jms import Session
         if self.username is not None and self.password is not None:
             self.connection = self.connectionFactory.createConnection(
                 self.username, self.password
@@ -156,6 +162,9 @@ class JMS(object):
         self.session = self.connection.createSession(
             False, Session.AUTO_ACKNOWLEDGE
         )
+
+    def _end_suite(selfself, data, result):
+        jpype.shutdownJVM()
 
     @keyword
     def create_connection(self):
@@ -196,38 +205,39 @@ class JMS(object):
         # Close connection and clean up
         self.connection.close()
         self.connection = None
-        jpype.shutdownJVM()
 
     @keyword
-    def create_producer(self, queue: str):
+    def create_producer(self, name: str, createTopic=False):
         """
-        Create producer for ``queue``.
+        Create producer for ``name``.
         Producer will be returned and also set as default producer for this instance.
 
         | =Arguments= | =Description= |
-        | ``queue`` | Name of the queue for which the producer is created |
+        | ``name`` | Name of the queue or topic for which the producer is created |
         """
         self.start_connection()
         # Check if producer already exists in self.producers dict with key queue
-        if queue in self.producers:
-            self.producer = self.producers[queue]
-            return self.producers[queue]
+        if name in self.producers:
+            self.producer = self.producers[name]
+            return self.producers[name]
         else:
-            # Create queue (replace with topic if needed)
-            destination = self.get_queue(queue)
+            if createTopic:
+                destination = self._get_topic(name)
+            else:
+                destination = self._get_queue(name)
             producer = self.session.createProducer(destination)
-            self.producers[queue] = producer
+            self.producers[name] = producer
             self.producer = producer
             return producer
 
     @keyword
-    def create_consumer(self, queue):
+    def create_consumer(self, name: str, createTopic=False):
         """
-        Create consumer for ``queue``.
+        Create consumer for ``name``.
         Consumer will be returned and also set as default consumer for this instance.
 
         | =Arguments= | =Description= |
-        | ``queue`` | Name of the queue for which the consumer is created |
+        | ``name`` | Name of the queue for which the consumer is created |
 
         Example:
         | Create Consumer | MyQueue |
@@ -238,14 +248,16 @@ class JMS(object):
         """
         self.start_connection()
         # Check if consumer already exists in self.consumers dict with key queue
-        if queue in self.consumers:
-            self.consumer = self.consumers[queue]
-            return self.consumers[queue]
+        if name in self.consumers:
+            self.consumer = self.consumers[name]
+            return self.consumers[name]
         else:
-            # Create queue (replace with topic if needed)
-            destination = self.get_queue(queue)
+            if createTopic:
+                destination = self._get_topic(name)
+            else:
+                destination = self._get_queue(name)
             consumer = self.session.createConsumer(destination)
-            self.consumers[queue] = consumer
+            self.consumers[name] = consumer
             self.consumer = consumer
             return consumer
 
@@ -460,6 +472,31 @@ class JMS(object):
         print("Message sent successfully!")
 
     @keyword
+    def send_message_to_topic(self, topic, message):
+        """
+        Send message to topic.
+
+        | =Arguments= | =Description= |
+        | ``topic`` | Topic to send message to |
+        | ``message`` | Text of the message or message object |
+
+        Example:
+        | Send Message To Topic | MyTopic | Hello World |
+        | ${message}= | Create Message | Hello There |
+        | Send Message To Topic | MyTopic | ${message} |
+
+        """
+
+        if isinstance(message, str):
+            text_message = self.TextMessage()
+            text_message.setText(message)
+        else:
+            text_message = message
+        producer = self.create_producer(topic, True)
+        producer.send(text_message)
+        print("Message sent successfully!")
+
+    @keyword
     def receive_message_from_consumer(
         self,
         consumer, 
@@ -524,6 +561,25 @@ class JMS(object):
                 break
 
     @keyword
+    def clear_topic(self, topic):
+        """
+        Clear all messages from topic.
+
+        | =Arguments= | =Description= |
+        | ``topic`` | Topic to clear |
+
+        Example:
+        | Send Message To Queue | MyTopic | Hello World |
+        | Clear Topic | MyTopic |
+        """
+
+        consumer = self.create_consumer(topic)
+        while True:
+            message = consumer.receive(100)
+            if message is None:
+                break
+
+    @keyword
     def receive_all_messages_from_queue(self, queue, timeout=None):
         """
         Receive all messages from queue and return them as list.
@@ -551,7 +607,35 @@ class JMS(object):
             messages.append(message.getText())
         return messages
 
-    def get_queue(self, queue):
+    @keyword
+    def receive_all_messages_from_topic(self, topic, timeout=None):
+        """
+        Receive all messages from topic and return them as list.
+
+        | =Arguments= | =Description= |
+        | ``topic`` | Topic to receive messages from |
+        | ``timeout`` | Timeout in milliseconds. Defaults to 2000. |
+
+        Example:
+        | Send Message To Topic | MyTopic | Hello World |
+        | Send Message To Topic | MyTopic | Hello Again |
+        | ${messages}= | Receive All Messages From Topic | MyTopic |
+        | Should Be Equal As Strings | ${messages}[0] | Hello World |
+        | Should Be Equal As Strings | ${messages}[1] | Hello Again |
+
+        """
+        consumer = self.create_consumer(topic,True)
+        messages = []
+        if timeout is None:
+            timeout = self.timeout
+        while True:
+            message = consumer.receive(timeout)
+            if message is None:
+                break
+            messages.append(message.getText())
+        return messages
+
+    def _get_queue(self, queue):
         if queue in self.queues:
             return self.queues[queue]
         else:
@@ -561,14 +645,13 @@ class JMS(object):
                 self.queues[queue] = self.session.createQueue(queue)
             return self.queues[queue]
 
-    def get_topic(self, topic):
+    def _get_topic(self, topic):
         return self.session.createTopic(topic)
 
     def _close(self):
         if self.connection is not None:
             self.connection.close()
             self.connection = None
-            # jpype.shutdownJVM()
 
     def get_text(
             self,

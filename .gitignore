@@ -3,3 +3,4 @@
 *.tar.gz
 *.whl
 doc/
+**/__pycache__/
