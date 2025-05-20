@@ -14,7 +14,7 @@ install_requires = \
 
 setup_kwargs = {
     'name': 'robotframework-jmslibrary',
-    'version': '0.2.0',
+    'version': '0.3.0.dev0',
     'description': '',
     'long_description': '# robotframework-jmslibrary\n\n## Getting started\n\n### Installation\n\n`pip install --upgrade robotframework-jmslibrary`\n\n### Usage\n\n```RobotFramework\n*** Settings ***\nLibrary  JMS\n\n*** Test Cases ***\nSend And Receive JMS Messages\n    Create Producer    RobotQueue1    \n    Send    Hello from Robot Framework\n    Create Consumer    RobotQueue1\n    Receive    ==    Hello from Robot Framework\n\nSend JMS Messages\n    Create Producer    RobotQueue4\n    Send Message    Hello from Robot Framework\n    Create Consumer    RobotQueue4\n    Receive    ==    Hello from Robot Framework\n```\n\n',
     'author': 'Many Kasiriha',

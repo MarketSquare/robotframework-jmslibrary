@@ -70,22 +70,25 @@ class JMS(object):
         self.queues = {}
         if self.type == "activemq":
             import org.apache.activemq.command.ActiveMQTextMessage as TextMessage
-            try:                
+            import org.apache.activemq.command.ActiveMQBytesMessage as BytesMessage
+            try:
                 self._get_activemq_connection_factory_with_hashtable()
             except:
                 self._get_activemq_connection_factory()
         elif self.type == "weblogic":
             import weblogic.jms.common.TextMessageImpl as TextMessage
+            import weblogic.jms.common.BytesMessageImpl as BytesMessage
             self._get_weblogic_connection_factory_with_environment()
         else:
             raise Exception("Unknown JMS type")
         self.TextMessage = TextMessage
+        self.BytesMessage = BytesMessage
 
     def _get_weblogic_connection_factory_with_hashtable(self):
         #Create a Context object
         from javax.naming import Context
         from javax.naming import InitialContext
-        
+
         #Create a Java Hashtable instance
         from java.util import Hashtable
 
@@ -97,7 +100,7 @@ class JMS(object):
 
         self.jndiContext = InitialContext(properties)
         self.connectionFactory = self.jndiContext.lookup(self.connection_factory)
-    
+
     def _get_weblogic_connection_factory_with_environment(self):
          #Create a Context object
         from javax.naming import Context
@@ -119,7 +122,7 @@ class JMS(object):
         self.connectionFactory = self.ConnectionFactory(
             "tcp://{}:{}".format(self.server, self.port)
         )
-    
+
     def _get_activemq_connection_factory_with_hashtable(self):
 
         from javax.naming import Context
@@ -261,10 +264,32 @@ class JMS(object):
             self.consumer = consumer
             return consumer
 
+
     @keyword
     def create_message(self, message: str):
         """
+        *DEPRECATED* Use keyword `Create Text Message` instead.
         Creates a message from ``message`` and sets it as default message for this instance.
+        After calling this keyword, ``Send`` keyword can be used without passing message.
+
+        The message is object returned and also set as default message for this instance.
+
+        | =Arguments= | =Description= |
+        | ``message`` | Text of the message |
+
+        Example:
+        | Create Message | Hello World |
+        | Create Producer | MyQueue |
+        | Send | |
+        | Receive Message From Queue | MyQueue | == | Hello World |
+
+        """
+        self.create_text_message(message)
+
+    @keyword
+    def create_text_message(self, message: str):
+        """
+        Creates a text message from ``message`` and sets it as default message for this instance.
         After calling this keyword, ``Send`` keyword can be used without passing message.
 
         The message is object returned and also set as default message for this instance.
@@ -283,41 +308,6 @@ class JMS(object):
         text_message.setText(message)
         self.message = text_message
         return text_message
-
-    @keyword
-    def send(self, message=None):
-        """
-        Send message to default producer.
-        If message is passed, it will be sent. Otherwise, message from ``Create Message`` will be sent.
-
-        | =Arguments= | =Description= |
-        | ``message`` | Text of the message or message object|
-
-        Example:
-        | Create Message | Hello World |
-        | Create Producer | MyQueue |
-        | Send | |
-        | Receive Message From Queue | MyQueue | == | Hello World |
-        | ${message}= | Create Message | Hello There |
-        | Send | ${message} |
-        | Receive Message From Queue | MyQueue | == | Hello There |
-        """
-        if message is not None:
-            if isinstance(message, str):
-                text_message = self.TextMessage()
-                text_message.setText(message)
-                self.message = text_message
-            else:
-                text_message = message
-        elif self.message is not None:
-            text_message = self.message
-        else:
-            raise Exception("No message to send")
-        if self.producer is None:
-            raise Exception("Producer not created")
-        self.producer.send(text_message)
-        print("Message sent successfully!")
-
 
     @keyword
     def receive(
@@ -347,7 +337,6 @@ class JMS(object):
 
         if consumer is None:
             consumer = self.consumer
-
         value = self._receive_message_from_jms(consumer=consumer, timeout = timeout)
         formatter = self.keyword_formatters.get(self.receive)
         return verify_assertion(
@@ -386,6 +375,85 @@ class JMS(object):
         return verify_assertion(
                 value, assertion_operator, assertion_expected, "Received Message", message, formatter
             )
+
+    @keyword
+    def receive_message_from_consumer(
+            self,
+            consumer,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+            timeout: Optional[int] = None,
+    ) -> Any:
+        value = self._receive_message_from_jms(consumer=consumer, timeout=timeout)
+        formatter = self.keyword_formatters.get(self.receive_message_from_consumer)
+        return verify_assertion(
+            value, assertion_operator, assertion_expected, "Received Message", message, formatter
+        )
+
+    @keyword
+    def receive_message_from_queue(
+            self,
+            queue,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+            timeout: Optional[int] = None,
+    ) -> Any:
+        """
+        Receive message from queue and verify assertion.
+
+        | =Arguments= | =Description= |
+        | ``queue`` | Queue to receive message from |
+        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
+        | ``assertion_expected`` | Expected value for the state |
+        | ``message`` | overrides the default error message for assertion. |
+        | ``timeout`` | Timeout in milliseconds. Defaults to 2000. |
+
+        Example:
+        | Send Message To Queue | MyQueue | Hello World |
+        | Receive Message From Queue | MyQueue | == | Hello World |
+
+        """
+        value = self._receive_message_from_jms(queue=queue, timeout=timeout)
+        formatter = self.keyword_formatters.get(self.receive_message_from_queue)
+        return verify_assertion(
+            value, assertion_operator, assertion_expected, "Received Message", message, formatter
+        )
+
+    @keyword
+    def send(self, message=None):
+        """
+        Send message to default producer.
+        If message is passed, it will be sent. Otherwise, message from ``Create Message`` will be sent.
+
+        | =Arguments= | =Description= |
+        | ``message`` | Text of the message or message object|
+
+        Example:
+        | Create Message | Hello World |
+        | Create Producer | MyQueue |
+        | Send | |
+        | Receive Message From Queue | MyQueue | == | Hello World |
+        | ${message}= | Create Message | Hello There |
+        | Send | ${message} |
+        | Receive Message From Queue | MyQueue | == | Hello There |
+        """
+        if message is not None:
+            if isinstance(message, str):
+                text_message = self.TextMessage()
+                text_message.setText(message)
+                self.message = text_message
+            else:
+                text_message = message
+        elif self.message is not None:
+            text_message = self.message
+        else:
+            raise Exception("No message to send")
+        if self.producer is None:
+            raise Exception("Producer not created")
+        self.producer.send(text_message)
+        print("Message sent successfully!")
 
     @keyword
     def send_message(self, message=None):
@@ -466,7 +534,7 @@ class JMS(object):
             text_message = self.TextMessage()
             text_message.setText(message)
         else:
-            text_message = message    
+            text_message = message
         producer = self.create_producer(queue)
         producer.send(text_message)
         print("Message sent successfully!")
@@ -497,51 +565,6 @@ class JMS(object):
         print("Message sent successfully!")
 
     @keyword
-    def receive_message_from_consumer(
-        self,
-        consumer, 
-        assertion_operator: Optional[AssertionOperator] = None,
-        assertion_expected: Optional[Any] = None,
-        message: Optional[str] = None,
-        timeout: Optional[int]=None,
-    ) -> Any:
-        value = self._receive_message_from_jms(consumer=consumer, timeout = timeout)
-        formatter = self.keyword_formatters.get(self.receive_message_from_consumer)
-        return verify_assertion(
-                value, assertion_operator, assertion_expected, "Received Message", message, formatter
-            )
-
-    @keyword
-    def receive_message_from_queue(
-        self,
-        queue, 
-        assertion_operator: Optional[AssertionOperator] = None,
-        assertion_expected: Optional[Any] = None,
-        message: Optional[str] = None,
-        timeout: Optional[int]=None,
-    ) -> Any:
-        """
-        Receive message from queue and verify assertion.
-
-        | =Arguments= | =Description= |
-        | ``queue`` | Queue to receive message from |
-        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
-        | ``assertion_expected`` | Expected value for the state |
-        | ``message`` | overrides the default error message for assertion. |
-        | ``timeout`` | Timeout in milliseconds. Defaults to 2000. |
-
-        Example:
-        | Send Message To Queue | MyQueue | Hello World |
-        | Receive Message From Queue | MyQueue | == | Hello World |
-        
-        """
-        value = self._receive_message_from_jms(queue=queue, timeout=timeout)
-        formatter = self.keyword_formatters.get(self.receive_message_from_queue)
-        return verify_assertion(
-                value, assertion_operator, assertion_expected, "Received Message", message, formatter
-            )
-
-    @keyword
     def clear_queue(self, queue):
         """
         Clear all messages from queue.
@@ -556,8 +579,8 @@ class JMS(object):
 
         consumer = self.create_consumer(queue)
         while True:
-            message = consumer.receive(100)
-            if message is None:
+            jms_message = consumer.receive(100)
+            if jms_message is None:
                 break
 
     @keyword
@@ -575,8 +598,8 @@ class JMS(object):
 
         consumer = self.create_consumer(topic)
         while True:
-            message = consumer.receive(100)
-            if message is None:
+            jms_message = consumer.receive(100)
+            if jms_message is None:
                 break
 
     @keyword
@@ -674,7 +697,7 @@ class JMS(object):
         | ${text}= | Get Text |
         | Should Be Equal | ${text} | Hello World |
         
-        """     
+        """
         if self.last_received_message is not None:
             value = self.last_received_message.getText()
         else:
@@ -683,15 +706,14 @@ class JMS(object):
         return verify_assertion(
                 value, assertion_operator, assertion_expected, "Message Text", message, formatter
             )
-        
+
     def get_text_from_message(
-        self, 
+        self,
         jms_message,
         assertion_operator: Optional[AssertionOperator] = None,
         assertion_expected: Optional[Any] = None,
         message: Optional[str] = None,
-        timeout: Optional[int]=None,
-        ) -> Any: 
+        ) -> Any:
         """
 
         Get text from ``jms_message`` and verify assertion.
@@ -719,7 +741,34 @@ class JMS(object):
                 value, assertion_operator, assertion_expected, "Message Text", message, formatter
             )
 
-    
+    def get_properties_from_message(self, jms_message = None):
+        """
+
+        Get properties from ``jms_message``.
+
+        | =Arguments= | =Description= |
+        | ``jms_message`` | JMS message to get text from |
+
+        Example:
+        | Send Message To Queue | MyQueue | Hello World |
+        | ${message}= | Receive Message From Queue | MyQueue |
+        | &{dict}= Get Properties From Message | ${message}
+
+        """
+        props = None
+        if jms_message is not None:
+            props = dict(jms_message.getProperties())
+            # return dict(jms_message.getProperties())
+        elif self.last_received_message is not None:
+            props = dict(self.last_received_message.getProperties())
+            # return dict(self.last_received_message.getProperties())
+        else:
+            props = dict()
+            # return dict()
+        for key, value in props.items():
+            props[key] = str(value)
+        return props
+
     def _receive_message_from_jms(self, consumer = None, queue: str = None , timeout: int = None):
         if consumer and queue:
             raise Exception("You can only pass either consumer or queue")
@@ -733,9 +782,16 @@ class JMS(object):
         self.last_received_message = received_message
         if isinstance(received_message, self.TextMessage):
             return str(received_message.getText())
+        elif isinstance(received_message,self.BytesMessage):
+            received_bytes = bytearray()
+            length = received_message.getBodyLength()
+            while length > 0:
+                received_bytes.append(received_message.readUnsignedByte())
+                length -= 1
+            return received_bytes
         elif received_message is None:
             return AssertionError("No message received")
-        
+
     @keyword
     def set_timeout(self, timeout):
         """
