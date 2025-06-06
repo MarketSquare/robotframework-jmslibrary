@@ -38,7 +38,7 @@ jobs:
         java-version: '11'
         distribution: 'corretto'
     - name: Download ActiveMQ
-      run: wget https://archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.19.0-bin.tar.gz
+      run: wget https://archive.apache.org/dist/activemq/5.19.0/apache-activemq-5.19.0-bin.tar.gz
     - name: Extract ActiveMQ
       run: tar -xzf apache-activemq-5.19.0-bin.tar.gz
     - name: Start ActiveMQ
