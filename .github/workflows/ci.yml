@@ -31,16 +31,19 @@ jobs:
         virtualenvs-in-project: false
         virtualenvs-path: ~/.virtualenvs
         installer-parallel: true
-    - name: Install Packages and Binaries
-      run: |
-        sudo apt-get update
-        sudo apt-get -y install default-jre wget
-        wget https://repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.25.0/amqp-client-5.25.0.jar -P jars/
-    - name: Start RabbitMQ
-      uses: namoshek/rabbitmq-github-action@v1
+
+    - name: Set up Java
+      uses: actions/setup-java@v2
       with:
-        ports: '1883:1883 8883:8883'
-        container-name: 'mqtt'
+        java-version: '11'
+    - name: Download ActiveMQ
+      run: wget https://archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.16.3-bin.tar.gz
+    - name: Extract ActiveMQ
+      run: tar -xzf apache-activemq-5.16.3-bin.tar.gz
+    - name: Start ActiveMQ
+      run: apache-activemq-5.16.3/bin/activemq start
+    - name: Verify ActiveMQ is running
+      run: curl http://localhost:8161
     - name: Install dependencies
       run: |
         poetry install
