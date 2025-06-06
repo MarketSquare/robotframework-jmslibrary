@@ -43,10 +43,10 @@ jobs:
       run: tar -xzf apache-activemq-5.19.0-bin.tar.gz
     - name: Start ActiveMQ
       run: apache-activemq-5.19.0/bin/activemq start
-    - name: Copy ActiveMQ client jar to jars directory
+    - name: Download and Copy ActiveMQ client all to JARs
       run: |
         mkdir -p jars
-        cp apache-activemq-5.19.0/lib/activemq-all-5.19.0.jar jars/
+        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-all/5.19.0/activemq-all-5.19.0.jar -O jars/activemq-all-5.19.0.jar
     - name: Install dependencies
       run: |
         poetry install
