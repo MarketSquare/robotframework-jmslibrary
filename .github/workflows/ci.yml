@@ -38,11 +38,15 @@ jobs:
         java-version: '11'
         distribution: 'corretto'
     - name: Download ActiveMQ
-      run: wget https://archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.16.3-bin.tar.gz
+      run: wget https://archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.19.0-bin.tar.gz
     - name: Extract ActiveMQ
-      run: tar -xzf apache-activemq-5.16.3-bin.tar.gz
+      run: tar -xzf apache-activemq-5.19.0-bin.tar.gz
     - name: Start ActiveMQ
-      run: apache-activemq-5.16.3/bin/activemq start
+      run: apache-activemq-5.19.0/bin/activemq start
+    - name: Copy ActiveMQ client jar to jars directory
+      run: |
+        mkdir -p jars
+        cp apache-activemq-5.19.0/lib/activemq-all-5.19.0.jar jars/
     - name: Install dependencies
       run: |
         poetry install
