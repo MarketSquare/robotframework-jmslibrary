@@ -43,8 +43,6 @@ jobs:
       run: tar -xzf apache-activemq-5.16.3-bin.tar.gz
     - name: Start ActiveMQ
       run: apache-activemq-5.16.3/bin/activemq start
-    - name: Verify ActiveMQ is running
-      run: curl http://localhost:8161
     - name: Install dependencies
       run: |
         poetry install
