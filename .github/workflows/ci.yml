@@ -45,8 +45,19 @@ jobs:
       run: apache-activemq-5.19.0/bin/activemq start
     - name: Download and Copy ActiveMQ client all to JARs
       run: |
+    - name: Download and Copy ActiveMQ client and dependencies to JARs
+      run: |
         mkdir -p jars
-        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-all/5.19.0/activemq-all-5.19.0.jar -O jars/activemq-all-5.19.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-client/5.19.0/activemq-client-5.19.0.jar -O jars/activemq-client-5.19.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-broker/5.19.0/activemq-broker-5.19.0.jar -O jars/activemq-broker-5.19.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-openwire-legacy/5.19.0/activemq-openwire-legacy-5.19.0.jar -O jars/activemq-openwire-legacy-5.19.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-jms-pool/5.19.0/activemq-jms-pool-5.19.0.jar -O jars/activemq-jms-pool-5.19.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-pool/5.19.0/activemq-pool-5.19.0.jar -O jars/activemq-pool-5.19.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/geronimo/specs/geronimo-j2ee-management_1.1_spec/1.0.1/geronimo-j2ee-management_1.1_spec-1.0.1.jar -O jars/geronimo-j2ee-management_1.1_spec-1.0.1.jar
+        wget https://repo1.maven.org/maven2/org/fusesource/hawtbuf/hawtbuf/1.11/hawtbuf-1.11.jar -O jars/hawtbuf-1.11.jar
+        wget https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar -O jars/slf4j-api-1.7.36.jar
+        wget https://repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar -O jars/commons-lang3-3.12.0.jar
+        wget https://repo1.maven.org/maven2/org/apache/geronimo/specs/geronimo-jms_1.1_spec/1.1.1/geronimo-jms_1.1_spec-1.1.1.jar -O jars/geronimo-jms_1.1_spec-1.1.1.jar
     - name: Install dependencies
       run: |
         poetry install
