@@ -852,7 +852,7 @@ class JMS(object):
         return props
 
     @keyword
-    def set_property_to_message(self, name: str, value, jms_message = None):
+    def set_property_to_message(self, name: str, value = None, jms_message = None):
         """
 
         Set properties to ``jms_message``.
