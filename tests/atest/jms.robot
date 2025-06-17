@@ -17,15 +17,14 @@ Send JMS Text Message using Queue
 Send And Receive JMS Text Message using Topic
     Create Producer Topic   RobotTopic1
     Create Consumer Topic   RobotTopic1
-    Send    Hello from Robot Framework
-    Create Consumer Topic    RobotTopic1
-    Receive    ==    Hello from Robot Framework
+    Send Message   Hello from Robot Framework
+    Receive Message   ==    Hello from Robot Framework
 
 Send JMS Text Message using Topic
     Create Producer Topic    RobotTopic4
     Create Consumer Topic   RobotTopic4
     Send Message    Hello from Robot Framework
-    Receive    ==    Hello from Robot Framework
+    Receive Message   ==    Hello from Robot Framework
 
 
 Test AssertionEngine With Receive
@@ -137,3 +136,25 @@ Send And Receive JMS Bytes Message using Topic
     Create Consumer Topic    RobotTopic1
     ${result}    Convert To Bytes  01 02 03 04  hex
     Receive Message   ==    ${result}
+
+Send and receive JMS Message with property
+    Create Producer Topic   RobotTopicProperty
+    Create Consumer Topic   RobotTopicProperty
+    Create Text Message   Hello from Robot Framework
+    Set Property To Message   StringProp    StringValue
+    Set Property To Message   IntProp    ${10}
+    Send Message
+    Receive Message   ==    Hello from Robot Framework
+    Get Property From Message   StringProp  ==  StringValue
+    Get Property From Message   IntProp  ==  ${10}
+
+Receive JMS Message and get all properties
+    Create Producer Topic   RobotTopicProperty
+    Create Consumer Topic   RobotTopicProperty
+    Create Text Message   Hello from Robot Framework
+    Set Property To Message   StringProp    StringValue
+    Set Property To Message   IntProp    ${10}
+    Send Message
+    Receive Message   ==    Hello from Robot Framework
+    &{properties} =  Get Properties From Message
+    Log Many  &{properties}

@@ -787,7 +787,7 @@ class JMS(object):
             message: Optional[str] = None,
             ) -> Any:
         """
-        Get text from last received message and verify assertion.
+        Get text from last received jms message and verify assertion.
 
         | =Arguments= | =Description= |
         | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
@@ -852,7 +852,7 @@ class JMS(object):
         Get properties from ``jms_message``.
 
         | =Arguments= | =Description= |
-        | ``jms_message`` | JMS message to get text from |
+        | ``jms_message`` | JMS message to get property from |
 
         Example:
         | Send Message To Queue | MyQueue | Hello World |
@@ -870,10 +870,45 @@ class JMS(object):
         return props
 
     @keyword
+    def get_property_from_message(self, name: str,
+                                  assertion_operator: Optional[AssertionOperator] = None,
+                                  assertion_expected: Optional[Any] = None,
+                                  message: Optional[str] = None,
+                                  jms_message = None,
+                                  ) -> Any:
+        """
+
+        get property from ``jms_message``.
+        If jms_message is passed, it will be used. Otherwise, last received message will be used.
+
+        | =Arguments= | =Description= |
+        | ``name`` | Name of the property |
+        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
+        | ``assertion_expected`` | Expected value for the state |
+        | ``message`` | overrides the default error message for assertion. |
+        | ``jms_message`` | JMS message to set property |
+
+        Example:
+        | ${message}= | Create Text Message | MyQueue |
+        | Get Property From Message | REPLY_TO | ${message}
+
+        """
+        value = None
+        if jms_message is not None:
+            value = jms_message.getProperty(name)
+        elif self.jms_message is not None:
+            value = self.jms_message.getProperty(name)
+        formatter = self.keyword_formatters.get(self.get_property_from_message)
+        return verify_assertion(
+        value, assertion_operator, assertion_expected, "Received Property", message, formatter
+            )
+
+
+    @keyword
     def set_property_to_message(self, name: str, value = None, jms_message = None):
         """
 
-        Set properties to ``jms_message``.
+        Set property to ``jms_message``.
         If jms_message is passed, it will be used. Otherwise, message from ``Create Message`` will be used.
 
         | =Arguments= | =Description= |
