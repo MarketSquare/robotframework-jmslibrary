@@ -427,7 +427,7 @@ class JMS(object):
         """
         *DEPRECATED* Use keyword `Receive Message` instead.
 
-        Returns text of JMS message from consumer and verifies assertion.
+        Returns content (text or binary) of JMS message from consumer and verifies assertion.
 
         | =Arguments= | =Description= |
         | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
@@ -724,10 +724,10 @@ class JMS(object):
         if timeout is None:
             timeout = self.timeout
         while True:
-            message = consumer.receive(timeout)
-            if message is None:
+            jms_message = consumer.receive(timeout)
+            if jms_message is None:
                 break
-            messages.append(message.getText())
+            messages.append(self._get_body_from_jms_message(jms_message))
         return messages
 
     @keyword
@@ -752,10 +752,10 @@ class JMS(object):
         if timeout is None:
             timeout = self.timeout
         while True:
-            message = consumer.receive(timeout)
-            if message is None:
+            jms_message = consumer.receive(timeout)
+            if jms_message is None:
                 break
-            messages.append(message.getText())
+            messages.append(self._get_body_from_jms_message(jms_message))
         return messages
 
     def _get_queue(self, name: str):
@@ -928,24 +928,37 @@ class JMS(object):
             self.jms_message.setProperty(name, value)
             return self.jms_message
 
+    def _get_text_from_jms_message(self,jms_message = None):
+        if jms_message is not None:
+            return str(jms_message.getText())
+        return None
+
+    def _get_bytes_from_jms_message(self,jms_message = None):
+        if jms_message is not None:
+            received_bytes = bytearray()
+            length = jms_message.getBodyLength()
+            while length > 0:
+                received_bytes.append(jms_message.readUnsignedByte())
+                length -= 1
+            return received_bytes
+        return None
+
+    def _get_body_from_jms_message(self, jms_message = None):
+        if isinstance(jms_message, self.TextMessage):
+            return self._get_text_from_jms_message(jms_message)
+        elif isinstance(jms_message,self.BytesMessage):
+            return self._get_bytes_from_jms_message(jms_message)
+        else:
+            return AssertionError("No message received")
+
     def _receive_message_from_jms(self, consumer = None, timeout: int = None):
         if consumer is None:
             raise Exception("You need to pass a consumer")
         if timeout is None:
             timeout = self.timeout
-        received_message = consumer.receive(timeout)
-        self.last_received_message = received_message
-        if isinstance(received_message, self.TextMessage):
-            return str(received_message.getText())
-        elif isinstance(received_message,self.BytesMessage):
-            received_bytes = bytearray()
-            length = received_message.getBodyLength()
-            while length > 0:
-                received_bytes.append(received_message.readUnsignedByte())
-                length -= 1
-            return received_bytes
-        else:
-            return AssertionError("No message received")
+        jms_message = consumer.receive(timeout)
+        self.last_received_message = jms_message
+        return self._get_body_from_jms_message(jms_message)
 
     @keyword
     def set_timeout(self, timeout):

@@ -113,17 +113,34 @@ Mass Sending Of Messages via Queue And Clear
     END
     Clear Queue    MassTestQueueClear
 
-Mass Sending Of Messages via Queue Receive ALl in List
+Mass Sending Of Text Messages via Queue Receive ALl in List
     FOR  ${i}    IN RANGE    1000
         Send Message To Queue    MassTestQueueClear    Test${i}
     END
     ${messages}    Receive ALl Messages From Queue    MassTestQueueClear
     Log    ${messages}
 
-Mass Sending Of Messages via Topic Receive ALl in List
+Mass Sending Of Text Messages via Topic Receive ALl in List
     Create Consumer Topic   MassTestTopicClear
     FOR  ${i}    IN RANGE    1000
-        Send Message To Topic    MassTestTopicClear    Test${i}
+            Send Message To Topic    MassTestTopicClear    Test${i}
+    END
+    ${messages}    Receive ALl Messages From Topic    MassTestTopicClear
+    Log    ${messages}
+
+Mass Sending Of Bytes Messages via Queue Receive ALl in List
+    FOR  ${i}    IN RANGE    1000
+        ${message}    Convert to Bytes  Test${i}
+        Send Message To Queue    MassTestQueueClear    ${message}
+    END
+    ${messages}    Receive ALl Messages From Queue    MassTestQueueClear
+    Log    ${messages}
+
+Mass Sending Of Bytes Messages via Topic Receive ALl in List
+    Create Consumer Topic   MassTestTopicClear
+    FOR  ${i}    IN RANGE    1000
+        ${message}    Convert to Bytes  Test${i}
+            Send Message To Topic    MassTestTopicClear    ${message}
     END
     ${messages}    Receive ALl Messages From Topic    MassTestTopicClear
     Log    ${messages}
