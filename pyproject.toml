@@ -12,7 +12,6 @@ python = ">=3.8.1,<4.0"
 jpype1 = "*"
 robotframework = "*"
 robotframework-assertion-engine = "*"
-poetry-pyinvoke-plugin = "*"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -20,6 +19,7 @@ pytest = "*"
 invoke = "*"
 coverage = "*"
 robotframework-stacktrace = "*"
+poetry-pyinvoke-plugin = "*"
 
 [build-system]
 requires = ["poetry-core"]
