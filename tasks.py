@@ -29,7 +29,7 @@ def atests(context):
     cmd = [
         "coverage",
         "run",
-        "--source=src/SelfHealing",
+        "--source=JMS",
         "-p",
         "-m",
         "robot",

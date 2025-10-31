@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "robotframework-jmslibrary"
-version = "0.2.0"
+version = "0.3.0.dev0"
 description = ""
-authors = ["Many Kasiriha <many.kasiriha@dbschenker.com>"]
+authors = ["Many Kasiriha <many.kasiriha@dbschenker.com>",
+"Andre Krautschick <andre.krautschick@eurocontrol.int"]
 readme = "README.md"
 packages = [{include = "JMS"}]
 
@@ -18,6 +19,7 @@ pytest = "*"
 invoke = "*"
 coverage = "*"
 robotframework-stacktrace = "*"
+poetry-pyinvoke-plugin = "*"
 
 [build-system]
 requires = ["poetry-core"]
