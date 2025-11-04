@@ -18,7 +18,7 @@ Library  JMS
 
 *** Test Cases ***
 Send And Receive JMS Messages
-    Create Producer    RobotQueue1    
+    Create Producer    RobotQueue1
     Send    Hello from Robot Framework
     Create Consumer    RobotQueue1
     Receive    ==    Hello from Robot Framework
