@@ -252,22 +252,6 @@ class JMS(object):
             return producer
 
     @keyword
-    def create_producer(self, name: str, createTopic=False):
-        """
-        *DEPRECATED* Use keyword `Create Producer Topic` or `Create Producer Queue` instead.
-
-        Create producer for ``name``.
-        Producer will be returned and also set as default producer for this instance.
-
-        | =Arguments= | =Description= |
-        | ``name`` | Name of the queue or topic for which the producer is created |
-        """
-        if createTopic:
-            return self.create_producer_topic(name)
-        else:
-            return self.create_producer_queue(name)
-
-    @keyword
     def create_consumer_topic(self, topic: str):
         """
         Create consumer for ``topic``.
@@ -323,52 +307,6 @@ class JMS(object):
             return consumer
 
     @keyword
-    def create_consumer(self, name: str, createTopic=False):
-        """
-        *DEPRECATED* Use keyword `Create Consumer Topic` or `Create Consumer Queue` instead.
-
-        Create consumer for ``name``.
-        Consumer will be returned and also set as default consumer for this instance.
-
-        | =Arguments= | =Description= |
-        | ``name`` | Name of the queue for which the consumer is created |
-
-        Example:
-        | Create Consumer | MyQueue |
-        | Send Message To Queue | MyQueue | Hello World |
-        | Receive Message | == | Hello World |
-
-
-        """
-        if createTopic:
-            return self.create_consumer_topic(name)
-        else:
-            return self.create_consumer_queue(name)
-
-
-    @keyword
-    def create_message(self, message: str):
-        """
-        *DEPRECATED* Use keyword `Create Text Message` instead.
-
-        Creates a message from ``message`` and sets it as default message for this instance.
-        After calling this keyword, ``Send`` keyword can be used without passing message.
-
-        The message is object returned and also set as default message for this instance.
-
-        | =Arguments= | =Description= |
-        | ``message`` | Text of the message |
-
-        Example:
-        | Create Message | Hello World |
-        | Create Producer | MyQueue |
-        | Send | |
-        | Receive Message From Queue | MyQueue | == | Hello World |
-
-        """
-        self.create_text_message(message)
-
-    @keyword
     def create_text_message(self, message: str):
         """
         Creates a JMS text message from ``message`` and sets it as default message for this instance.
@@ -415,36 +353,6 @@ class JMS(object):
         return bytes_message
 
     @keyword
-    def receive(
-        self,
-        assertion_operator: Optional[AssertionOperator] = None,
-        assertion_expected: Optional[Any] = None,
-        message: Optional[str] = None,
-        timeout: Optional[int]=None,
-        consumer: Optional[Any] = None,
-    ) -> Any:
-        """
-        *DEPRECATED* Use keyword `Receive Message` instead.
-
-        Returns content (text or binary) of JMS message from consumer and verifies assertion.
-
-        | =Arguments= | =Description= |
-        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
-        | ``assertion_expected`` | Expected value for the state |
-        | ``message`` | overrides the default error message for assertion. |
-        | ``timeout`` | Timeout in milliseconds. Defaults to 2000. |
-        | ``consumer`` | Consumer to receive message from. If not passed, a consumer needs to be created before using ``Create Consumer`` |
-
-        Example:
-        | Create Consumer | MyQueue |
-        | Send Message To Queue | MyQueue | Hello World |
-        | ${message}= | Receive Message | == | Hello World |
-        | Should Be Equal | ${message} | Hello World |
-
-        """
-        return self.receive_message(assertion_operator, assertion_expected, message, timeout, consumer)
-
-    @keyword
     def receive_message(
         self,
         assertion_operator: Optional[AssertionOperator] = None,
@@ -475,24 +383,6 @@ class JMS(object):
         formatter = self.keyword_formatters.get(self.receive_message)
         return verify_assertion(
                 value, assertion_operator, assertion_expected, "Received Message", message, formatter
-            )
-
-    @keyword
-    def receive_message_from_consumer(
-            self,
-            consumer,
-            assertion_operator: Optional[AssertionOperator] = None,
-            assertion_expected: Optional[Any] = None,
-            message: Optional[str] = None,
-            timeout: Optional[int]=None,
-    ) -> Any:
-        """
-        *DEPRECATED* Use keyword `Receive Message` instead.
-        """
-        value = self._receive_message_from_jms(consumer=consumer, timeout = timeout)
-        formatter = self.keyword_formatters.get(self.receive_message_from_consumer)
-        return verify_assertion(
-        value, assertion_operator, assertion_expected, "Received Message", message, formatter
             )
 
     @keyword
@@ -550,28 +440,6 @@ class JMS(object):
         return self.receive_message(assertion_operator, assertion_expected, message, timeout, consumer)
 
     @keyword
-    def send(self, message=None):
-        """
-        *DEPRECATED* Use keyword `Send Message` instead.
-
-        Send message to default producer.
-        If message is passed, it will be sent. Otherwise, message from ``Create Message`` will be sent.
-
-        | =Arguments= | =Description= |
-        | ``message`` | Text of the message or message object|
-
-        Example:
-        | Create Message | Hello World |
-        | Create Producer | MyQueue |
-        | Send | |
-        | Receive Message From Queue | MyQueue | == | Hello World |
-        | ${message}= | Create Message | Hello There |
-        | Send | ${message} |
-        | Receive Message From Queue | MyQueue | == | Hello There |
-        """
-        self.send_message(message)
-
-    @keyword
     def send_message(self, message=None, producer: Optional[Any] = None,):
         """
         Send message to default producer.
@@ -608,24 +476,6 @@ class JMS(object):
             raise Exception("No message to send")
         producer.send(jms_message)
         print("Message sent successfully!")
-
-    @keyword
-    def send_message_to_producer(self, producer, message=None):
-        """
-        *DEPRECATED* Use keyword `Send Message` instead.
-
-        Send message to producer.
-        
-        | =Arguments= | =Description= |
-        | ``producer`` | Producer to send message to |
-        | ``message`` | Text of the message or message object |
-
-        Example:
-        | ${producer}= | Create Producer | MyQueue |
-        | Send Message To Producer | ${producer} | Hello World |
-
-        """
-        self.send_message(message, producer=producer)
 
     @keyword
     def send_message_to_queue(self, queue: str, message=None):

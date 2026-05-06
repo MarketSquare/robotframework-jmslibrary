@@ -3,16 +3,16 @@ Library  JMS
 
 *** Test Cases ***
 Send And Receive JMS Text Message using Queue
-    Create Producer    RobotQueue1    
-    Send    Hello from Robot Framework
-    Create Consumer    RobotQueue1
-    Receive    ==    Hello from Robot Framework
+    Create Producer Queue   RobotQueue1
+    Send Message    Hello from Robot Framework
+    Create Consumer Queue   RobotQueue1
+    Receive Message  ==    Hello from Robot Framework
 
 Send JMS Text Message using Queue
-    Create Producer    RobotQueue4
+    Create Producer Queue   RobotQueue4
     Send Message    Hello from Robot Framework
-    Create Consumer    RobotQueue4
-    Receive    ==    Hello from Robot Framework
+    Create Consumer Queue   RobotQueue4
+    Receive Message  ==    Hello from Robot Framework
 
 Send And Receive JMS Text Message using Topic
     Create Producer Topic   RobotTopic1
@@ -28,40 +28,40 @@ Send JMS Text Message using Topic
 
 
 Test AssertionEngine With Receive
-    Create Producer    RQ1
-    Create Consumer    RQ1
+    Create Producer Topic    RQ1
+    Create Consumer Topic   RQ1
     Send Message    Test
-    Receive
+    Receive Message
     Send Message    Test
-    Receive    timeout=500
+    Receive Message  timeout=500
     Send Message    Test
-    Receive    ==    Test   timeout=500
+    Receive Message  ==    Test   timeout=500
     Send Message    Test
-    Receive    ==    Test
+    Receive Message  ==    Test
 
 
 Assert Response
-    Create Producer    AR1
-    Create Consumer    AR1
-    Send    Hello123
-    Receive
+    Create Producer Queue   AR1
+    Create Consumer Queue    AR1
+    Send Message    Hello123
+    Receive Message
     Get Text    ==    Hello123
     Get Text    contains    123    
     
 
 Send JMS Messages And Assert with AssertionEngine
-    Create Producer    RQ4
-    Create Consumer    RQ4
+    Create Producer Topic    RQ4
+    Create Consumer Topic    RQ4
     Send Message    Test
-    Receive
+    Receive Message
     Send Message    Test
-    Receive    timeout=500
+    Receive Message  timeout=500
     Send Message    Test
-    Receive    ==    Test    timeout=1000   
+    Receive Message  ==    Test    timeout=1000
     Send Message    Test
-    Receive    !=    Test1
+    Receive Message  !=    Test1
     Send Message    Test
-    Run Keyword And Expect Error      Received Message 'Test' (str) should be 'Test123' (str)     Receive    ==    Test123 
+    Run Keyword And Expect Error      Received Message 'Test' (str) should be 'Test123' (str)     Receive Message  ==    Test123
     
 Send And Receive Messages via Queues
 
@@ -75,14 +75,14 @@ Send And Receive Messages via Queues
     ${message}    Receive Message From Queue    MyRobotQueue1
     
 Mass Sending And Receiving Of Messages via Producer And Consumer Queue
-    ${producer}    Create Producer    MassTest
-    ${consumer}    Create Consumer    MassTest
+    ${producer}    Create Producer Queue   MassTest
+    ${consumer}    Create Consumer Queue   MassTest
     FOR  ${i}    IN RANGE    1000
-        Send Message To Producer    ${producer}    Test${i}
+        Send Message    producer=${producer}    message=Test${i}
     END
 
     FOR  ${i}    IN RANGE    1000
-        ${message}    Receive Message From Consumer    ${consumer}
+        ${message}    Receive Message   consumer=${consumer}
         Log    ${message}
     END
 
