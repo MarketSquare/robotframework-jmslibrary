@@ -379,10 +379,11 @@ class JMS(object):
         """
         if consumer is None:
             consumer = self.consumer
-        value = self._receive_message_from_jms(consumer=consumer, timeout=timeout)
+        jms_message = self._receive_message_from_jms(consumer=consumer, timeout=timeout)
+        message_body = self._get_body_from_jms_message(jms_message)
         formatter = self.keyword_formatters.get(self.receive_message)
         return verify_assertion(
-                value, assertion_operator, assertion_expected, "Received Message", message, formatter
+            message_body, assertion_operator, assertion_expected, "Received Message", message, formatter
             )
 
     @keyword
@@ -777,12 +778,12 @@ class JMS(object):
             self.jms_message.setProperty(name, value)
             return self.jms_message
 
-    def _get_text_from_jms_message(self,jms_message = None):
+    def _get_text_from_jms_message(self,jms_message = None) -> str | None:
         if jms_message is not None:
             return str(jms_message.getText())
         return None
 
-    def _get_bytes_from_jms_message(self,jms_message = None):
+    def _get_bytes_from_jms_message(self,jms_message = None) -> bytearray | None:
         if jms_message is not None:
             received_bytes = bytearray()
             length = jms_message.getBodyLength()
@@ -798,7 +799,7 @@ class JMS(object):
         elif isinstance(jms_message,self.BytesMessage):
             return self._get_bytes_from_jms_message(jms_message)
         else:
-            return AssertionError("No message received")
+            return AssertionError("Not supported message received")
 
     def _receive_message_from_jms(self, consumer = None, timeout: int = None):
         if consumer is None:
@@ -807,7 +808,7 @@ class JMS(object):
             timeout = self.timeout
         jms_message = consumer.receive(timeout)
         self.last_received_message = jms_message
-        return self._get_body_from_jms_message(jms_message)
+        return jms_message
 
     @keyword
     def set_timeout(self, timeout):
