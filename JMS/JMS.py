@@ -42,7 +42,7 @@ class JMS(object):
         | ``password`` | Password for JMS server. Defaults to ``None`` |
         | ``connection_factory`` | Connection factory name. Defaults to ``ConnectionFactory`` |
         | ``timeout`` | Timeout in milliseconds. Defaults to ``2000`` |
-        | ``classpath`` | Path to the jvm library file, typically one of (``libjvm.so``, ``jvm.dll``, ...). Using ``None`` will apply the default jvmpath. |
+        | ``jvmpath`` | Path to the jvm library file, typically one of (``libjvm.so``, ``jvm.dll``, ...). Using ``None`` will apply the default jvmpath. |
 
         Connection URL for ActiveMQ is ``tcp://<server>:<port>``
         Connection URL for Weblogic is ``t3://<server>:<port>``
