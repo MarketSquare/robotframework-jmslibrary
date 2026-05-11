@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "robotframework-jmslibrary"
-version = "0.4.0.dev1"
+version = "0.4.0"
 description = ""
 authors = ["Many Kasiriha <many.kasiriha@dbschenker.com>",
 "Andre Krautschick <andre@krautschick.info>"]
