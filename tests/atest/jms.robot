@@ -40,14 +40,25 @@ Test AssertionEngine With Receive
     Receive Message  ==    Test
 
 
-Assert Response
+Assert Response with Text
     Create Producer Queue   AR1
     Create Consumer Queue    AR1
     Send Message    Hello123
     Receive Message
     Get Text    ==    Hello123
     Get Text    contains    123    
-    
+
+Assert Response with Bytes
+    Create Producer Queue   AR2
+    Create Consumer Queue    AR2
+    ${message_body}    Convert To Bytes    Hello123
+    ${expected_body}    Convert To Bytes    Hello123
+    ${expected_body_part}    Convert To Bytes    123
+    Send Message    ${message_body}
+    Receive Message
+    Get Bytes    ==    ${expected_body}
+    Get Bytes    contains    ${expected_body_part}
+
 
 Send JMS Messages And Assert with AssertionEngine
     Create Producer Topic    RQ4

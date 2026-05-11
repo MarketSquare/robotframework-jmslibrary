@@ -338,7 +338,7 @@ class JMS(object):
         The JMS message object is returned and also set as default message for this instance.
 
         | =Arguments= | =Description= |
-        | ``message`` | Bytes message |
+        | ``message`` | Message body as bytes. In case a string is given, it is converted to bytes. |
 
         Example:
         | Create Bytes Message | Hello World |
@@ -630,12 +630,13 @@ class JMS(object):
             self.connection.close()
             self.connection = None
 
+    @keyword
     def get_text(
             self,
             assertion_operator: Optional[AssertionOperator] = None,
             assertion_expected: Optional[Any] = None,
             message: Optional[str] = None,
-            ) -> Any:
+    ) -> Any:
         """
         Get text from last received jms message and verify assertion.
 
@@ -652,22 +653,20 @@ class JMS(object):
         | Should Be Equal | ${text} | Hello World |
         
         """
-        if self.last_received_message is not None:
-            value = self.last_received_message.getText()
-        else:
-            raise Exception("No message to get text from")
+        value = self._get_text_from_jms_message(self.last_received_message)
         formatter = self.keyword_formatters.get(self.get_text)
         return verify_assertion(
-                value, assertion_operator, assertion_expected, "Message Text", message, formatter
-            )
+            value, assertion_operator, assertion_expected, "Message Text", message, formatter
+        )
 
+    @keyword
     def get_text_from_message(
-        self,
-        jms_message,
-        assertion_operator: Optional[AssertionOperator] = None,
-        assertion_expected: Optional[Any] = None,
-        message: Optional[str] = None,
-        ) -> Any:
+            self,
+            jms_message,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+    ) -> Any:
         """
 
         Get text from ``jms_message`` and verify assertion.
@@ -686,14 +685,72 @@ class JMS(object):
         | Should Be Equal | ${text} | Hello World |
         
         """
-        if jms_message is not None:
-            value = jms_message.getText()
-        else:
-            raise Exception("No message to get text from")
+        value = self._get_text_from_jms_message(jms_message)
         formatter = self.keyword_formatters.get(self.get_text_from_message)
         return verify_assertion(
-                value, assertion_operator, assertion_expected, "Message Text", message, formatter
-            )
+            value, assertion_operator, assertion_expected, "Message Text", message, formatter
+        )
+
+    @keyword
+    def get_bytes(
+            self,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+    ) -> Any:
+        """
+        Get bytes from last received jms message and verify assertion.
+
+        | =Arguments= | =Description= |
+        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
+        | ``assertion_expected`` | Expected value for the state |
+        | ``message`` | overrides the default error message for assertion. |
+
+        Example:
+        | Send Message To Queue | MyQueue | Hello World |
+        | Receive Message From Queue | MyQueue | == | Hello World |
+        | Get Bytes | == | Hello World |
+        | ${text}= | Get Bytes |
+        | Should Be Equal | ${text} | Hello World |
+
+        """
+        value = self._get_bytes_from_jms_message(self.last_received_message)
+        formatter = self.keyword_formatters.get(self.get_text)
+        return verify_assertion(
+            value, assertion_operator, assertion_expected, "Message Text", message, formatter
+        )
+
+    @keyword
+    def get_bytes_from_message(
+            self,
+            jms_message,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+    ) -> Any:
+        """
+
+        Get bytes from ``jms_message`` and verify assertion.
+
+        | =Arguments= | =Description= |
+        | ``jms_message`` | JMS message to get bytes from |
+        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
+        | ``assertion_expected`` | Expected value for the state |
+        | ``message`` | overrides the default error message for assertion. |
+
+        Example:
+        | Send Message To Queue | MyQueue | Hello World |
+        | ${message}= | Receive Message From Queue | MyQueue |
+        | Get Bytes From Message | ${message} | == | Hello World |
+        | ${text}= | Get Bytes From Message | ${message} |
+        | Should Be Equal | ${text} | Hello World |
+
+        """
+        value = self._get_bytes_from_jms_message(jms_message)
+        formatter = self.keyword_formatters.get(self.get_bytes_from_message)
+        return verify_assertion(
+            value, assertion_operator, assertion_expected, "Message Text", message, formatter
+        )
 
     @keyword
     def get_properties_from_message(self, jms_message = None):
@@ -781,25 +838,25 @@ class JMS(object):
     def _get_text_from_jms_message(self,jms_message = None) -> str | None:
         if jms_message is not None:
             return str(jms_message.getText())
-        return None
+        raise Exception("No message to get text from")
 
-    def _get_bytes_from_jms_message(self,jms_message = None) -> bytearray | None:
+    def _get_bytes_from_jms_message(self,jms_message = None) -> bytes | None:
         if jms_message is not None:
             received_bytes = bytearray()
+            jms_message.reset()
             length = jms_message.getBodyLength()
             while length > 0:
                 received_bytes.append(jms_message.readUnsignedByte())
                 length -= 1
-            return received_bytes
-        return None
+            return bytes(received_bytes)
+        raise Exception("No message to get bytes from")
 
     def _get_body_from_jms_message(self, jms_message = None):
         if isinstance(jms_message, self.TextMessage):
             return self._get_text_from_jms_message(jms_message)
         elif isinstance(jms_message,self.BytesMessage):
             return self._get_bytes_from_jms_message(jms_message)
-        else:
-            return AssertionError("Not supported message received")
+        raise Exception("Not supported JMS message type received")
 
     def _receive_message_from_jms(self, consumer = None, timeout: int = None):
         if consumer is None:
