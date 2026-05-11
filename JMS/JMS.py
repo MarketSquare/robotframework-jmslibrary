@@ -14,9 +14,6 @@ from assertionengine import (
     verify_assertion,
     Formatter,
 )
-classpath="jars/*"
-jpype.startJVM(classpath=[classpath])
-
 
 class JMS(object):
     ROBOT_LISTENER_API_VERSION = 3
@@ -32,6 +29,7 @@ class JMS(object):
         password=None,
         connection_factory="ConnectionFactory",
         timeout = 2000,
+        jvmpath=None,
     ) -> None:
         """JMS library for Robot Framework
         
@@ -44,13 +42,14 @@ class JMS(object):
         | ``password`` | Password for JMS server. Defaults to ``None`` |
         | ``connection_factory`` | Connection factory name. Defaults to ``ConnectionFactory`` |
         | ``timeout`` | Timeout in milliseconds. Defaults to ``2000`` |
-        
+        | ``jvmpath`` | Path to the jvm library file, typically one of (``libjvm.so``, ``jvm.dll``, ...). Using ``None`` will apply the default jvmpath. |
+
         Connection URL for ActiveMQ is ``tcp://<server>:<port>``
         Connection URL for Weblogic is ``t3://<server>:<port>``
         """
         self.keyword_formatters = {}
         if not jpype.isJVMStarted():
-            jpype.startJVM(classpath=[classpath])
+            jpype.startJVM(jvmpath,classpath=[classpath])
         self.ROBOT_LIBRARY_LISTENER = self
         self.type = type
         self.classpath = classpath
