@@ -307,7 +307,7 @@ class JMS(object):
             return consumer
 
     @keyword
-    def create_text_message(self, message: str):
+    def create_text_message(self, message_body: str):
         """
         Creates a JMS text message from ``message`` and sets it as default message for this instance.
         After calling this keyword, ``Send Message`` keyword can be used without passing message.
@@ -325,12 +325,12 @@ class JMS(object):
 
         """
         text_message = self.TextMessage()
-        text_message.setText(message)
+        text_message.setText(message_body)
         self.jms_message = text_message
         return text_message
 
     @keyword
-    def create_bytes_message(self, message: bytes):
+    def create_bytes_message(self, message_body: bytes):
         """
         Creates a JMS bytes message from ``message`` and sets it as default message for this instance.
         After calling this keyword, ``Send`` keyword can be used without passing message.
@@ -338,7 +338,7 @@ class JMS(object):
         The JMS message object is returned and also set as default message for this instance.
 
         | =Arguments= | =Description= |
-        | ``message`` | Message body as bytes. In case a string is given, it is converted to bytes. |
+        | ``message`` | Message body as bytes. |
 
         Example:
         | Create Bytes Message | Hello World |
@@ -348,7 +348,7 @@ class JMS(object):
 
         """
         bytes_message = self.BytesMessage()
-        bytes_message.writeBytes(message)
+        bytes_message.writeBytes(message_body)
         self.jms_message = bytes_message
         return bytes_message
 
@@ -360,7 +360,7 @@ class JMS(object):
         message: Optional[str] = None,
         timeout: Optional[int]=None,
         consumer: Optional[Any] = None,
-    ) -> Any:
+    ) -> any:
         """Returns content (text or binary) of JMS message from consumer and verifies assertion.
 
         | =Arguments= | =Description= |
@@ -697,7 +697,7 @@ class JMS(object):
             assertion_operator: Optional[AssertionOperator] = None,
             assertion_expected: Optional[Any] = None,
             message: Optional[str] = None,
-    ) -> Any:
+    ) -> bytearray | bytes:
         """
         Get bytes from last received jms message and verify assertion.
 
@@ -727,7 +727,7 @@ class JMS(object):
             assertion_operator: Optional[AssertionOperator] = None,
             assertion_expected: Optional[Any] = None,
             message: Optional[str] = None,
-    ) -> Any:
+    ) -> bytearray | bytes:
         """
 
         Get bytes from ``jms_message`` and verify assertion.
@@ -764,7 +764,7 @@ class JMS(object):
         Example:
         | Send Message To Queue | MyQueue | Hello World |
         | ${message}= | Receive Message From Queue | MyQueue |
-        | &{dict}= Get Properties From Message | ${message}
+        | &{dict}= Get Properties From Message | ${message} |
 
         """
         props = {}
@@ -797,7 +797,7 @@ class JMS(object):
 
         Example:
         | ${message}= | Create Text Message | MyQueue |
-        | Get Property From Message | REPLY_TO | ${message}
+        | Get Property From Message | REPLY_TO | ${message} |
 
         """
         value = None
@@ -840,7 +840,7 @@ class JMS(object):
             return str(jms_message.getText())
         raise Exception("No message to get text from")
 
-    def _get_bytes_from_jms_message(self,jms_message = None) -> bytes | None:
+    def _get_bytes_from_jms_message(self,jms_message = None) -> bytearray | None:
         if jms_message is not None:
             received_bytes = bytearray()
             jms_message.reset()
@@ -848,7 +848,7 @@ class JMS(object):
             while length > 0:
                 received_bytes.append(jms_message.readUnsignedByte())
                 length -= 1
-            return bytes(received_bytes)
+            return received_bytes
         raise Exception("No message to get bytes from")
 
     def _get_body_from_jms_message(self, jms_message = None):
