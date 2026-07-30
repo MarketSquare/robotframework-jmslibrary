@@ -1,8 +1,11 @@
 # CHANGELOG
-
+## v0.5.0
+### Features
+### Bugfix
+- Fix of issue: [Library can't be used during robot --dry-run](https://github.com/MarketSquare/robotframework-jmslibrary/issues/6)
 
 ## v0.4.0
-### Features:
+### Features
 
 - Added parameter to set path to jvm library file. \
 This configuration is required in special situations when the jvm library file is not automatically detected.
