@@ -4,6 +4,9 @@
 ### Bugfix
 - Fix of issue: [Library can't be used during robot --dry-run](https://github.com/MarketSquare/robotframework-jmslibrary/issues/6)
 
+### Note
+Some existing keywords are marked as deprecated and will be removed in a future release.
+
 ## v0.4.0
 ### Features
 
