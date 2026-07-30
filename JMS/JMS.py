@@ -1,6 +1,7 @@
 import jpype
 import jpype.imports
 from robot.api.deco import keyword, library
+from robot.api.exceptions import Failure
 import logging
 from typing import Any, List, Optional, Union
 from assertionengine import (
@@ -27,7 +28,7 @@ class JMS(object):
         port=61616,
         username=None,
         password=None,
-        connection_factory="ConnectionFactory",
+        connection_factory_name="ConnectionFactory",
         timeout = 2000,
         jvmpath=None,
     ) -> None:
@@ -42,7 +43,7 @@ class JMS(object):
         | ``password`` | Password for JMS server. Defaults to ``None`` |
         | ``connection_factory`` | Connection factory name. Defaults to ``ConnectionFactory`` |
         | ``timeout`` | Timeout in milliseconds. Defaults to ``2000`` |
-        | ``classpath`` | Path to the jvm library file, typically one of (``libjvm.so``, ``jvm.dll``, ...). Using ``None`` will apply the default jvmpath. |
+        | ``jvmpath`` | Path to the jvm library file, typically one of (``libjvm.so``, ``jvm.dll``, ...). Using ``None`` will apply the default jvmpath. |
 
         Connection URL for ActiveMQ is ``tcp://<server>:<port>``
         Connection URL for Weblogic is ``t3://<server>:<port>``
@@ -58,7 +59,8 @@ class JMS(object):
         self.username = username
         self.password = password
         self.timeout = timeout
-        self.connection_factory = connection_factory
+        self.connection_factory_name = connection_factory_name
+        self.connection_factory = None
         self.connection = None
         self.producer = None
         self.consumer = None
@@ -68,6 +70,9 @@ class JMS(object):
         self.consumers = {}
         self.queues = {}
         self.topics = {}
+
+    def _get_connection_factory(self):
+
         if self.type == "activemq":
             import org.apache.activemq.command.ActiveMQTextMessage as TextMessage
             import org.apache.activemq.command.ActiveMQBytesMessage as BytesMessage
@@ -99,7 +104,7 @@ class JMS(object):
         properties.put(Context.SECURITY_CREDENTIALS, self.password)
 
         self.jndiContext = InitialContext(properties)
-        self.connectionFactory = self.jndiContext.lookup(self.connection_factory)
+        self.connection_factory = self.jndiContext.lookup(self.connection_factory_name)
 
     def _get_weblogic_connection_factory_with_environment(self):
          #Create a Context object
@@ -113,13 +118,13 @@ class JMS(object):
         env.setConnectionTimeout(10000)
         env.setResponseReadTimeout(15000)
         self.jndiContext = env.getInitialContext()
-        self.connectionFactory = self.jndiContext.lookup(self.connection_factory)
+        self.connection_factory = self.jndiContext.lookup(self.connection_factory_name)
 
 
     def _get_activemq_connection_factory(self):
         from org.apache.activemq import ActiveMQConnectionFactory as ConnectionFactory
         # Create connection factory
-        self.connectionFactory = self.ConnectionFactory(
+        self.connection_factory = ConnectionFactory(
             "tcp://{}:{}".format(self.server, self.port)
         )
 
@@ -138,14 +143,14 @@ class JMS(object):
             properties.put(Context.SECURITY_CREDENTIALS, self.password)
 
         self.jndiContext = InitialContext(properties)
-        self.connectionFactory = self.jndiContext.lookup(self.connection_factory)
+        self.connection_factory = self.jndiContext.lookup(self.connection_factory_name)
 
     def _create_weblogic_connection(self):
         try:
             from javax.jms import Session
         except ImportError:
             from jakarta.jms import Session
-        self.connection = self.connectionFactory.createConnection()
+        self.connection = self.connection_factory.createConnection()
         self.session = self.connection.createSession(
             False, Session.AUTO_ACKNOWLEDGE
         )
@@ -157,11 +162,11 @@ class JMS(object):
         except ImportError:
             from jakarta.jms import Session
         if self.username is not None and self.password is not None:
-            self.connection = self.connectionFactory.createConnection(
+            self.connection = self.connection_factory.createConnection(
                 self.username, self.password
             )
         else:
-            self.connection = self.connectionFactory.createConnection()
+            self.connection = self.connection_factory.createConnection()
         self.session = self.connection.createSession(
             False, Session.AUTO_ACKNOWLEDGE
         )
@@ -175,8 +180,12 @@ class JMS(object):
         Create connection to JMS server
         """
         if self.connection is not None:
-            print("Connection already created")
+            logging.debug("Connection already created")
             return
+        try:
+            self._get_connection_factory()
+        except:
+            raise Failure("Failed to create connection")
         if self.type == "weblogic":
             self._create_weblogic_connection()
         else:
@@ -203,11 +212,12 @@ class JMS(object):
     def close_connection(self):
         """
         Close connection to JMS server.
-        Shutdown JVM.
         """
         # Close connection and clean up
+        self.stop_connection()
         self.connection.close()
         self.connection = None
+        self.connection_factory = None
 
     @keyword
     def create_producer_topic(self, topic: str):
