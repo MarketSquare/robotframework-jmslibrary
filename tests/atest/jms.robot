@@ -1,6 +1,8 @@
 *** Settings ***
 Library  JMS
 
+Test Teardown    Close Connection
+
 *** Test Cases ***
 Send And Receive JMS Text Message using Queue
     Create Producer    RobotQueue1    
@@ -113,14 +115,14 @@ Mass Sending Of Messages via Queue And Clear
     END
     Clear Queue    MassTestQueueClear
 
-Mass Sending Of Text Messages via Queue Receive ALl in List
+Mass Sending Of Text Messages via Queue Receive All in List
     FOR  ${i}    IN RANGE    1000
         Send Message To Queue    MassTestQueueClear    Test${i}
     END
     ${messages}    Receive ALl Messages From Queue    MassTestQueueClear
     Log    ${messages}
 
-Mass Sending Of Text Messages via Topic Receive ALl in List
+Mass Sending Of Text Messages via Topic Receive All in List
     Create Consumer Topic   MassTestTopicClear
     FOR  ${i}    IN RANGE    1000
             Send Message To Topic    MassTestTopicClear    Test${i}
@@ -128,7 +130,7 @@ Mass Sending Of Text Messages via Topic Receive ALl in List
     ${messages}    Receive ALl Messages From Topic    MassTestTopicClear
     Log    ${messages}
 
-Mass Sending Of Bytes Messages via Queue Receive ALl in List
+Mass Sending Of Bytes Messages via Queue Receive All in List
     FOR  ${i}    IN RANGE    1000
         ${message}    Convert to Bytes  Test${i}
         Send Message To Queue    MassTestQueueClear    ${message}
@@ -136,7 +138,7 @@ Mass Sending Of Bytes Messages via Queue Receive ALl in List
     ${messages}    Receive ALl Messages From Queue    MassTestQueueClear
     Log    ${messages}
 
-Mass Sending Of Bytes Messages via Topic Receive ALl in List
+Mass Sending Of Bytes Messages via Topic Receive All in List
     Create Consumer Topic   MassTestTopicClear
     FOR  ${i}    IN RANGE    1000
         ${message}    Convert to Bytes  Test${i}
