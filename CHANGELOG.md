@@ -1,5 +1,5 @@
 # CHANGELOG
-## v0.5.0
+## v0.4.1
 ### Features
 ### Bugfix
 - Fix of issue: [Library can't be used during robot --dry-run](https://github.com/MarketSquare/robotframework-jmslibrary/issues/6)
