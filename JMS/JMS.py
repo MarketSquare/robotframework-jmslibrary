@@ -1,8 +1,9 @@
+import logging
+
 import jpype
 import jpype.imports
 from robot.api.deco import keyword, library
 from robot.api.exceptions import Failure
-import logging
 from typing import Any, List, Optional, Union
 from assertionengine import (
     AssertionOperator,
@@ -15,6 +16,9 @@ from assertionengine import (
     verify_assertion,
     Formatter,
 )
+
+from .connection_factory.weblogic_connection_factory import WeblogicConnectionFactory, ActivemqConnectionFactory
+
 
 class JMS(object):
     ROBOT_LISTENER_API_VERSION = 3
@@ -71,109 +75,6 @@ class JMS(object):
         self.queues = {}
         self.topics = {}
 
-    def _get_connection_factory(self):
-
-        if self.type == "activemq":
-            import org.apache.activemq.command.ActiveMQTextMessage as TextMessage
-            import org.apache.activemq.command.ActiveMQBytesMessage as BytesMessage
-            try:
-                self._get_activemq_connection_factory_with_hashtable()
-            except:
-                self._get_activemq_connection_factory()
-        elif self.type == "weblogic":
-            import weblogic.jms.common.TextMessageImpl as TextMessage
-            import weblogic.jms.common.BytesMessageImpl as BytesMessage
-            self._get_weblogic_connection_factory_with_environment()
-        else:
-            raise Exception("Unknown JMS type")
-        self.TextMessage = TextMessage
-        self.BytesMessage = BytesMessage
-
-    def _get_weblogic_connection_factory_with_hashtable(self):
-        #Create a Context object
-        from javax.naming import Context
-        from javax.naming import InitialContext
-
-        #Create a Java Hashtable instance
-        from java.util import Hashtable
-
-        properties = Hashtable()
-        properties.put(Context.INITIAL_CONTEXT_FACTORY, "weblogic.jndi.WLInitialContextFactory")
-        properties.put(Context.PROVIDER_URL, "t3://{}:{}".format(self.server, self.port))
-        properties.put(Context.SECURITY_PRINCIPAL, self.username)
-        properties.put(Context.SECURITY_CREDENTIALS, self.password)
-
-        self.jndiContext = InitialContext(properties)
-        self.connection_factory = self.jndiContext.lookup(self.connection_factory_name)
-
-    def _get_weblogic_connection_factory_with_environment(self):
-         #Create a Context object
-        from javax.naming import Context
-        from javax.naming import InitialContext
-        from weblogic.jndi import Environment
-        env = Environment()
-        env.setProviderUrl("t3://{}:{}".format(self.server, self.port))
-        env.setSecurityPrincipal(self.username)
-        env.setSecurityCredentials(self.password)
-        env.setConnectionTimeout(10000)
-        env.setResponseReadTimeout(15000)
-        self.jndiContext = env.getInitialContext()
-        self.connection_factory = self.jndiContext.lookup(self.connection_factory_name)
-
-
-    def _get_activemq_connection_factory(self):
-        from org.apache.activemq import ActiveMQConnectionFactory as ConnectionFactory
-        # Create connection factory
-        self.connection_factory = ConnectionFactory(
-            "tcp://{}:{}".format(self.server, self.port)
-        )
-
-    def _get_activemq_connection_factory_with_hashtable(self):
-
-        from javax.naming import Context
-        from javax.naming import InitialContext
-
-        #Create a Java Hashtable instance
-        from java.util import Hashtable
-        properties = Hashtable()
-        properties.put(Context.INITIAL_CONTEXT_FACTORY, "org.apache.activemq.jndi.ActiveMQInitialContextFactory")
-        properties.put(Context.PROVIDER_URL, "tcp://{}:{}".format(self.server, self.port))
-        if self.username is not None and self.password is not None:
-            properties.put(Context.SECURITY_PRINCIPAL, self.username)
-            properties.put(Context.SECURITY_CREDENTIALS, self.password)
-
-        self.jndiContext = InitialContext(properties)
-        self.connection_factory = self.jndiContext.lookup(self.connection_factory_name)
-
-    def _create_weblogic_connection(self):
-        try:
-            from javax.jms import Session
-        except ImportError:
-            from jakarta.jms import Session
-        self.connection = self.connection_factory.createConnection()
-        self.session = self.connection.createSession(
-            False, Session.AUTO_ACKNOWLEDGE
-        )
-
-
-    def _create_activemq_connection(self):
-        try:
-            from javax.jms import Session
-        except ImportError:
-            from jakarta.jms import Session
-        if self.username is not None and self.password is not None:
-            self.connection = self.connection_factory.createConnection(
-                self.username, self.password
-            )
-        else:
-            self.connection = self.connection_factory.createConnection()
-        self.session = self.connection.createSession(
-            False, Session.AUTO_ACKNOWLEDGE
-        )
-
-    # def _end_suite(selfself, data, result):
-    #     jpype.shutdownJVM()
-
     @keyword
     def create_connection(self):
         """
@@ -183,13 +84,16 @@ class JMS(object):
             logging.debug("Connection already created")
             return
         try:
-            self._get_connection_factory()
+            if self.type == "weblogic":
+                self.connection_factory = WeblogicConnectionFactory(self.server, self.port, self.username, self.password, self.connection_factory_name)
+            else:
+                self.connection_factory = ActivemqConnectionFactory(self.server, self.port, self.username, self.password, self.connection_factory_name)
+            self.connection = self.connection_factory.connection
+            self.session = self.connection_factory.session
+            self.TextMessage = self.connection_factory.TextMessage
+            self.BytesMessage = self.connection_factory.BytesMessage
         except:
             raise Failure("Failed to create connection")
-        if self.type == "weblogic":
-            self._create_weblogic_connection()
-        else:
-            self._create_activemq_connection()
 
     @keyword
     def start_connection(self):
@@ -623,7 +527,7 @@ class JMS(object):
             return self.queues[name]
         else:
             if self.type == "weblogic":
-                self.queues[name] = self.jndiContext.lookup(name)
+                self.queues[name] = self.connection_factory.jndiContext.lookup(name)
             else:
                 self.queues[name] = self.session.createQueue(name)
             return self.queues[name]
