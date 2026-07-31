@@ -17,7 +17,8 @@ from assertionengine import (
     Formatter,
 )
 
-from .connection_factory.weblogic_connection_factory import WeblogicConnectionFactory, ActivemqConnectionFactory
+from .connection_factory.weblogic_connection_factory import WeblogicConnectionFactory
+from .connection_factory.activemq_connection_factory import ActivemqConnectionFactory
 
 
 class JMS(object):
