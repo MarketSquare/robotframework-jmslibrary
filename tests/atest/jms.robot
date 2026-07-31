@@ -20,13 +20,13 @@ Send And Receive JMS Text Message using Topic
     Create Producer Topic   RobotTopic1
     Create Consumer Topic   RobotTopic1
     Send Message   Hello from Robot Framework
-    Receive Message   ==    Hello from Robot Framework
+    Receive Text Message   ==    Hello from Robot Framework
 
 Send JMS Text Message using Topic
     Create Producer Topic    RobotTopic4
     Create Consumer Topic   RobotTopic4
     Send Message    Hello from Robot Framework
-    Receive Message   ==    Hello from Robot Framework
+    Receive Message From Topic   RobotTopic4    ==    Hello from Robot Framework
 
 
 Test AssertionEngine With Receive
@@ -125,6 +125,14 @@ Mass Sending Of Messages via Queue And Clear
         Send Message To Queue    MassTestQueueClear    Test${i}
     END
     Clear Queue    MassTestQueueClear
+    Receive Message From Queue  MassTestQueueClear  ==  ${None}  timeout=5
+
+Mass Sending Of Messages via Topic And Clear
+    FOR  ${i}    IN RANGE    1000
+        Send Message To Topic    MassTestTopicClear    Test${i}
+    END
+    Clear Topic    MassTestTopicClear
+    Receive Message From Topic  MassTestTopicClear  ==  ${None}  timeout=5
 
 Mass Sending Of Text Messages via Queue Receive All in List
     FOR  ${i}    IN RANGE    1000
@@ -165,7 +173,7 @@ Send And Receive JMS Bytes Message using Topic
     Send Message   ${message}
     Create Consumer Topic    RobotTopic1
     ${result}    Convert To Bytes  01 02 03 04  hex
-    Receive Message   ==    ${result}
+    Receive Bytes Message   ==    ${result}
 
 Send and receive JMS Message with property
     Create Producer Topic   RobotTopicProperty
@@ -188,3 +196,4 @@ Receive JMS Message and get all properties
     Receive Message   ==    Hello from Robot Framework
     &{properties} =  Get Properties From Message
     Log Many  &{properties}
+

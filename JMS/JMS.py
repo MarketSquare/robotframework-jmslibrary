@@ -302,6 +302,74 @@ class JMS(object):
             )
 
     @keyword
+    def receive_bytes_message(
+            self,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+            timeout: Optional[int]=None,
+            consumer: Optional[Any] = None,
+    ) -> any:
+        """Returns bytes body of JMS message from consumer and verifies assertion.
+
+        | =Arguments= | =Description= |
+        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
+        | ``assertion_expected`` | Expected value for the state |
+        | ``message`` | overrides the default error message for assertion. |
+        | ``timeout`` | Timeout in milliseconds. Defaults to 2000. |
+        | ``consumer`` | Consumer to receive message from. If not passed, a consumer needs to be created before using ``Create Consumer`` |
+
+        Example:
+        | Create Consumer | MyQueue |
+        | Send Message To Queue | MyQueue | Hello World |
+        | ${message}= | Receive Bytes Message | == | Hello World |
+        | Should Be Equal | ${message} | Hello World |
+
+        """
+        if consumer is None:
+            consumer = self.consumer
+        jms_message = self._receive_message_from_jms(consumer=consumer, timeout=timeout)
+        message_body = self._get_bytes_from_jms_message(jms_message)
+        formatter = self.keyword_formatters.get(self.receive_bytes_message)
+        return verify_assertion(
+            message_body, assertion_operator, assertion_expected, "Received Message", message, formatter
+        )
+
+    @keyword
+    def receive_text_message(
+            self,
+            assertion_operator: Optional[AssertionOperator] = None,
+            assertion_expected: Optional[Any] = None,
+            message: Optional[str] = None,
+            timeout: Optional[int]=None,
+            consumer: Optional[Any] = None,
+    ) -> any:
+        """Returns text body of JMS message from consumer and verifies assertion.
+
+        | =Arguments= | =Description= |
+        | ``assertion_operator`` | See `Assertions` for further details. Defaults to None. |
+        | ``assertion_expected`` | Expected value for the state |
+        | ``message`` | overrides the default error message for assertion. |
+        | ``timeout`` | Timeout in milliseconds. Defaults to 2000. |
+        | ``consumer`` | Consumer to receive message from. If not passed, a consumer needs to be created before using ``Create Consumer`` |
+
+        Example:
+        | Create Consumer | MyQueue |
+        | Send Message To Queue | MyQueue | Hello World |
+        | ${message}= | Receive Text Message | == | Hello World |
+        | Should Be Equal | ${message} | Hello World |
+
+        """
+        if consumer is None:
+            consumer = self.consumer
+        jms_message = self._receive_message_from_jms(consumer=consumer, timeout=timeout)
+        message_body = self._get_text_from_jms_message(jms_message)
+        formatter = self.keyword_formatters.get(self.receive_text_message)
+        return verify_assertion(
+            message_body, assertion_operator, assertion_expected, "Received Message", message, formatter
+            )
+
+    @keyword
     def receive_message_from_queue(
         self,
         queue: str,
@@ -540,11 +608,6 @@ class JMS(object):
             self.topics[name] = self.session.createTopic(name)
             return self.topics[name]
 
-    def _close(self):
-        if self.connection is not None:
-            self.connection.close()
-            self.connection = None
-
     @keyword
     def get_text(
             self,
@@ -751,12 +814,12 @@ class JMS(object):
             return self.jms_message
 
     def _get_text_from_jms_message(self,jms_message = None) -> str | None:
-        if jms_message is not None:
+        if jms_message is not None and isinstance(jms_message, self.TextMessage):
             return str(jms_message.getText())
         raise Exception("No message to get text from")
 
     def _get_bytes_from_jms_message(self,jms_message = None) -> bytearray | None:
-        if jms_message is not None:
+        if jms_message is not None and isinstance(jms_message,self.BytesMessage):
             received_bytes = bytearray()
             jms_message.reset()
             length = jms_message.getBodyLength()
@@ -771,7 +834,7 @@ class JMS(object):
             return self._get_text_from_jms_message(jms_message)
         elif isinstance(jms_message,self.BytesMessage):
             return self._get_bytes_from_jms_message(jms_message)
-        raise Exception("Not supported JMS message type received")
+        # raise Exception("Not supported JMS message type received")
 
     def _receive_message_from_jms(self, consumer = None, timeout: int = None):
         if consumer is None:
