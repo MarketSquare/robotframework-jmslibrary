@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 class AbstractConnectionFactory(ABC):
-# class AbstractConnectionFactory():
 
     def __init__(self, server: str, port: int, username: str, password: str, connection_factory_name: str) -> None:
         self.server = server
@@ -15,6 +14,14 @@ class AbstractConnectionFactory(ABC):
         self.BytesMessage = None
         self._create_connection_factory()
         self._create_connection()
+
+    @abstractmethod
+    def create_queue(self, name: str):
+        pass
+
+    @abstractmethod
+    def create_topic(self, name: str):
+        pass
 
     @abstractmethod
     def _create_connection(self):

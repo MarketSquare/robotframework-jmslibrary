@@ -1,3 +1,4 @@
+from importlib import import_module
 import logging
 
 import jpype
@@ -17,17 +18,14 @@ from assertionengine import (
     Formatter,
 )
 
-from .connection_factory.weblogic_connection_factory import WeblogicConnectionFactory
-from .connection_factory.activemq_connection_factory import ActivemqConnectionFactory
-
-
 class JMS(object):
     ROBOT_LISTENER_API_VERSION = 3
 
 
     def __init__(
         self,
-        type="activemq",
+        # type="activemq",
+        type="ActivemqConnectionFactory",
         classpath="jars/*",
         server="localhost",
         port=61616,
@@ -76,6 +74,12 @@ class JMS(object):
         self.queues = {}
         self.topics = {}
 
+
+    def _get_connection_factory(self):
+        module = import_module("JMS.connection_factory")
+        factory = getattr(module, self.type)
+        return factory(self.server, self.port, self.username, self.password, self.connection_factory_name)
+
     @keyword
     def create_connection(self):
         """
@@ -85,10 +89,7 @@ class JMS(object):
             logging.debug("Connection already created")
             return
         try:
-            if self.type == "weblogic":
-                self.connection_factory = WeblogicConnectionFactory(self.server, self.port, self.username, self.password, self.connection_factory_name)
-            else:
-                self.connection_factory = ActivemqConnectionFactory(self.server, self.port, self.username, self.password, self.connection_factory_name)
+            self.connection_factory = self._get_connection_factory()
             self.connection = self.connection_factory.connection
             self.session = self.connection_factory.session
             self.TextMessage = self.connection_factory.TextMessage
@@ -595,17 +596,14 @@ class JMS(object):
         if name in self.queues:
             return self.queues[name]
         else:
-            if self.type == "weblogic":
-                self.queues[name] = self.connection_factory.jndiContext.lookup(name)
-            else:
-                self.queues[name] = self.session.createQueue(name)
+            self.queues[name] = self.connection_factory.create_queue(name)
             return self.queues[name]
 
     def _get_topic(self, name: str):
         if name in self.topics:
             return self.topics[name]
         else:
-            self.topics[name] = self.session.createTopic(name)
+            self.topics[name] = self.connection_factory.create_topic(name)
             return self.topics[name]
 
     @keyword

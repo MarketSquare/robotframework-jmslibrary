@@ -2,6 +2,12 @@ from JMS.connection_factory.abstract_connection_factory import AbstractConnectio
 
 class WeblogicConnectionFactory(AbstractConnectionFactory):
 
+    def create_queue(self, name: str):
+        return self.jndiContext.lookup(name)
+
+    def create_topic(self, name: str):
+        return self.session.createTopic(name)
+
     def _create_connection(self):
         try:
             from javax.jms import Session
