@@ -1,6 +1,6 @@
-from JMS.connection_factory.abstract_connection_factory import AbstractConnectionFactory
+from JMS.connectors.abstract_connector import AbstractConnector
 
-class ActivemqConnectionFactory(AbstractConnectionFactory):
+class ActivemqConnector(AbstractConnector):
 
     def create_queue(self, name: str):
         return self.session.createQueue(name)

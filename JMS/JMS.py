@@ -1,4 +1,3 @@
-from importlib import import_module
 import logging
 
 import jpype
@@ -18,14 +17,15 @@ from assertionengine import (
     Formatter,
 )
 
+from JMS.connectors import available_connectors
+
 class JMS(object):
     ROBOT_LISTENER_API_VERSION = 3
 
 
     def __init__(
         self,
-        # type="activemq",
-        type="ActivemqConnectionFactory",
+        type="activemq",
         classpath="jars/*",
         server="localhost",
         port=61616,
@@ -44,7 +44,7 @@ class JMS(object):
         | ``port`` | JMS server port. Defaults to ``61616`` |
         | ``username`` | Username for JMS server. Defaults to ``None`` |
         | ``password`` | Password for JMS server. Defaults to ``None`` |
-        | ``connection_factory`` | Connection factory name. Defaults to ``ConnectionFactory`` |
+        | ``connectors`` | Connection factory name. Defaults to ``ConnectionFactory`` |
         | ``timeout`` | Timeout in milliseconds. Defaults to ``2000`` |
         | ``jvmpath`` | Path to the jvm library file, typically one of (``libjvm.so``, ``jvm.dll``, ...). Using ``None`` will apply the default jvmpath. |
 
@@ -63,8 +63,8 @@ class JMS(object):
         self.password = password
         self.timeout = timeout
         self.connection_factory_name = connection_factory_name
-        self.connection_factory = None
-        self.connection = None
+        self._connector = None
+        self._current_connection = None
         self._current_producer = None
         self._current_consumer = None
         self._last_created_jms_message = None
@@ -74,26 +74,21 @@ class JMS(object):
         self._queues = {}
         self._topics = {}
 
-
-    def _get_connection_factory(self):
-        module = import_module("JMS.connection_factory")
-        factory = getattr(module, self.type)
-        return factory(self.server, self.port, self.username, self.password, self.connection_factory_name)
-
     @keyword
     def create_connection(self):
         """
         Create connection to JMS server
         """
-        if self.connection is not None:
+        if self._current_connection is not None:
             logging.debug("Connection already created")
             return
         try:
-            self.connection_factory = self._get_connection_factory()
-            self.connection = self.connection_factory.connection
-            self.session = self.connection_factory.session
-            self.TextMessage = self.connection_factory.TextMessage
-            self.BytesMessage = self.connection_factory.BytesMessage
+            connector = available_connectors.get(self.type)
+            self._connector = connector(self.server, self.port, self.username, self.password, self.connection_factory_name)
+            self._current_connection = self._connector.connection
+            self.session = self._connector.session
+            self.TextMessage = self._connector.TextMessage
+            self.BytesMessage = self._connector.BytesMessage
         except:
             raise Failure("Failed to create connection")
 
@@ -103,16 +98,16 @@ class JMS(object):
         Start connection to JMS server.
         If connection is already started, nothing happens
         """
-        if self.connection is None:
+        if self._current_connection is None:
             self.create_connection()
-        self.connection.start()
+        self._current_connection.start()
 
     @keyword
     def stop_connection(self):
         """
         Stop connection to JMS server.
         """
-        self.connection.stop()
+        self._current_connection.stop()
 
     @keyword
     def close_connection(self):
@@ -121,9 +116,9 @@ class JMS(object):
         """
         # Close connection and clean up
         self.stop_connection()
-        self.connection.close()
-        self.connection = None
-        self.connection_factory = None
+        self._current_connection.close()
+        self._current_connection = None
+        self._connector = None
 
     @keyword
     def create_producer_topic(self, topic: str):
@@ -576,14 +571,14 @@ class JMS(object):
         if name in self._queues:
             return self._queues[name]
         else:
-            self._queues[name] = self.connection_factory.create_queue(name)
+            self._queues[name] = self._connector.create_queue(name)
             return self._queues[name]
 
     def _get_topic(self, name: str):
         if name in self._topics:
             return self._topics[name]
         else:
-            self._topics[name] = self.connection_factory.create_topic(name)
+            self._topics[name] = self._connector.create_topic(name)
             return self._topics[name]
 
     @keyword

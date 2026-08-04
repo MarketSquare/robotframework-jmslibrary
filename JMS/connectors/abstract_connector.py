@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class AbstractConnectionFactory(ABC):
+class AbstractConnector(ABC):
 
     def __init__(self, server: str, port: int, username: str, password: str, connection_factory_name: str) -> None:
         self.server = server
